@@ -1,0 +1,23 @@
+[project]
+name = "price-cb-scraper"
+version = "0.1.0"
+description = "Multi-site product price tracking web application"
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12.0",
+  "fastapi>=0.109.0,<0.110.0",
+  "httpx>=0.27.0,<0.28.0",
+  "jinja2>=3.1.0",
+  "openpyxl>=3.1.0",
+  "python-multipart>=0.0.9",
+  "tenacity>=8.3.0",
+  "uvicorn>=0.27.0"
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.44.0"]
+dev = ["pytest>=8.2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

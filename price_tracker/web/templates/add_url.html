@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}URL Ekle - Price Tracker{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>URL Ekle</h1>
+  {% if message %}<div class="notice">{{ message }}</div>{% endif %}
+  {% if error %}<div class="notice error">{{ error }}</div>{% endif %}
+  <form method="post" action="/add-url" class="stack">
+    <fieldset>
+      <legend>Kategori</legend>
+      <label class="radio"><input type="radio" name="category_mode" value="existing" checked> Var olan kategori</label>
+      <select name="category_id">
+        {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+      </select>
+      <label class="radio"><input type="radio" name="category_mode" value="new"> Yeni kategori</label>
+      <input name="new_category" type="text" placeholder="Yeni kategori adi">
+    </fieldset>
+    <label for="urls">URL listesi</label>
+    <textarea id="urls" name="urls" rows="10" placeholder="https://..."></textarea>
+    <button class="primary" type="submit">Kaydet</button>
+  </form>
+</section>
+{% endblock %}

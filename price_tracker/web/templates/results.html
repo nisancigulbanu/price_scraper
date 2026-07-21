@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Sonuclar - Price Tracker{% endblock %}
+{% block content %}
+<section class="toolbar">
+  <form method="get" action="/results" class="inline-form wide">
+    <select name="category_id">
+      <option value="">Tum kategoriler</option>
+      {% for category in categories %}
+        <option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="status">
+      <option value="">Tum durumlar</option>
+      {% for status in ["success", "low_confidence", "not_found", "blocked", "timeout", "invalid_url", "error"] %}
+        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
+    <select name="domain">
+      <option value="">Tum domainler</option>
+      {% for domain in domains %}
+        <option value="{{ domain }}" {% if selected_domain == domain %}selected{% endif %}>{{ domain }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filtrele</button>
+  </form>
+</section>
+
+<section class="metrics compact">
+  <div><span>Count</span><strong>{{ stats.count }}</strong></div>
+  <div><span>Mean</span><strong>{{ "%.2f"|format(stats.mean) if stats.mean is not none else "-" }}</strong></div>
+  <div><span>Medyan</span><strong>{{ "%.2f"|format(stats.median) if stats.median is not none else "-" }}</strong></div>
+  <div><span>Min</span><strong>{{ "%.2f"|format(stats.min) if stats.min is not none else "-" }}</strong></div>
+  <div><span>Max</span><strong>{{ "%.2f"|format(stats.max) if stats.max is not none else "-" }}</strong></div>
+  <div><span>Kg Mean</span><strong>{{ "%.2f"|format(unit_stats.mean) if unit_stats.mean is not none else "-" }}</strong></div>
+  <div><span>Kg Medyan</span><strong>{{ "%.2f"|format(unit_stats.median) if unit_stats.median is not none else "-" }}</strong></div>
+</section>
+
+<section>
+  <h1>Sonuclar</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Kategori</th>
+        <th>Domain</th>
+        <th>Urun</th>
+        <th>Fiyat</th>
+        <th>Gramaj</th>
+        <th>Kg Fiyati</th>
+        <th>Durum</th>
+        <th>Guven</th>
+        <th>Yontem</th>
+        <th>Hata</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.category }}</td>
+          <td><a href="{{ row.url }}" target="_blank" rel="noreferrer">{{ row.domain }}</a></td>
+          <td>{{ row.product_name or "-" }}</td>
+          <td>{% if row.price is not none %}{{ "%.2f"|format(row.price) }} {{ row.currency }}{% else %}-{% endif %}</td>
+          <td>
+            {% if row.quantity_grams is not none %}
+              {{ "%.0f"|format(row.quantity_grams) }} g
+              <small>{{ row.quantity_source }} / {{ row.quantity_confidence }}</small>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{% if row.unit_price_per_kg is not none %}{{ "%.2f"|format(row.unit_price_per_kg) }} {{ row.currency }}/kg{% else %}-{% endif %}</td>
+          <td><span class="status status-{{ row.status }}">{{ row.status }}</span></td>
+          <td>{{ row.confidence }}</td>
+          <td>{{ row.method }}</td>
+          <td>{{ row.error or "" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10" class="empty">Sonuc bulunamadi.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+.tmp/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+data/server.out.log
+data/server.err.log
+data/cache/
+data/output/
