@@ -40,6 +40,9 @@ def _redirected_away_from_product(requested_url: str, final_url: str | None) -> 
         return True
     if any(part in product_markers for part in requested_parts) and not final_path:
         return True
+    final_parts = [part for part in final_path.split("/") if part]
+    if any(part in product_markers for part in final_parts):
+        return False
     requested_slug = requested_parts[-1] if requested_parts else ""
     return bool(requested_slug and final_path and requested_slug not in final_path)
 
@@ -98,6 +101,17 @@ def scrape_url(
         html = response.html
         http_status = response.status_code
         final_url = response.final_url
+        if response.status_code == 404:
+            return _error_result(
+                source_file=source_file,
+                category=category,
+                url=effective_url,
+                method="static_fetch",
+                status="not_found",
+                error="Product page returned HTTP 404",
+                http_status=http_status,
+                final_url=final_url,
+            )
         if _redirected_away_from_product(effective_url, final_url):
             return _error_result(
                 source_file=source_file,

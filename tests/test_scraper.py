@@ -39,6 +39,24 @@ def test_scrape_url_preserves_original_variant_query(monkeypatch):
     assert result.url == requested[0]
 
 
+def test_scrape_url_does_not_extract_price_from_http_404_page(monkeypatch):
+    monkeypatch.setattr(
+        "price_tracker.scraper.fetch_static",
+        lambda url: FetchResponse("<main>404 Not Found 1500 TL</main>", 404, url),
+    )
+
+    result = scrape_url(
+        source_file="test.xlsx",
+        category="1000_gr_urun",
+        url="https://example.com/urun",
+        use_browser_fallback=False,
+    )
+
+    assert result.status == "not_found"
+    assert result.price is None
+    assert result.http_status == 404
+
+
 def test_scrape_job_continues_after_unhandled_url_error(monkeypatch, tmp_path: Path):
     db_path = tmp_path / "job.sqlite3"
     init_db(db_path)

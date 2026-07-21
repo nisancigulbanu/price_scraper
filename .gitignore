@@ -6,3 +6,5 @@ data/server.out.log
 data/server.err.log
 data/cache/
 data/output/
+data/*.sqlite3-shm
+data/*.sqlite3-wal
