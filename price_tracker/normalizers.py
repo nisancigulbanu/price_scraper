@@ -5,10 +5,15 @@ from dataclasses import dataclass
 
 
 PRICE_RE = re.compile(
-    r"(?<![\w])(?:₺\s*)?(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[,.]\d{1,2})?)\s*(?:TL|TRY|₺)?(?![\w])",
+    r"(?<![\w])(?:\u20ba|\u00e2\u201a\u00ba|\$|\u20ac|\u00a3)?\s*"
+    r"(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[,.]\d{1,2})?)"
+    r"\s*(?:TL|TRY|USD|EUR|GBP|\u20ba|\u00e2\u201a\u00ba|\$|\u20ac|\u00a3)?(?![\w])",
     re.IGNORECASE,
 )
-HAS_CURRENCY_RE = re.compile(r"(₺|TL|TRY)", re.IGNORECASE)
+CURRENCY_RE = re.compile(
+    r"(\u20ba|\u00e2\u201a\u00ba|TL|TRY|USD|EUR|GBP|\$|\u20ac|\u00a3)",
+    re.IGNORECASE,
+)
 NOISE_AFTER_RE = re.compile(
     r"^\s*(?:gr|g|gram|kg|ml|lt|l|taksit|ay|adet|cm|mm|%)\b",
     re.IGNORECASE,
@@ -31,7 +36,7 @@ def looks_like_non_price(text: str, start: int, end: int) -> bool:
         return True
     if "%" in before[-2:] or "%" in after[:2]:
         return True
-    if not HAS_CURRENCY_RE.search(raw) and NOISE_AFTER_RE.search(after):
+    if not CURRENCY_RE.search(raw) and NOISE_AFTER_RE.search(after):
         return True
     return False
 
@@ -41,8 +46,21 @@ def normalize_price(raw: str) -> NormalizedPrice | None:
     if not value:
         return None
 
-    currency = "TRY" if HAS_CURRENCY_RE.search(value) else "TRY"
-    cleaned = HAS_CURRENCY_RE.sub("", value).strip()
+    currency_match = CURRENCY_RE.search(value)
+    currency_token = currency_match.group(1).lower() if currency_match else "try"
+    currency = {
+        "\u20ba": "TRY",
+        "\u00e2\u201a\u00ba": "TRY",
+        "tl": "TRY",
+        "try": "TRY",
+        "$": "USD",
+        "usd": "USD",
+        "\u20ac": "EUR",
+        "eur": "EUR",
+        "\u00a3": "GBP",
+        "gbp": "GBP",
+    }.get(currency_token, currency_token.upper())
+    cleaned = CURRENCY_RE.sub("", value).strip()
     cleaned = re.sub(r"\s+", "", cleaned)
 
     if "," in cleaned:

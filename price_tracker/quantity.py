@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from urllib.parse import parse_qsl, urlencode, unquote, urlparse, urlunparse
+from urllib.parse import parse_qsl, unquote, urlparse
 
 
 QUANTITY_RE = re.compile(
@@ -96,39 +96,6 @@ def extract_category_quantity(category: str) -> QuantityResult | None:
 
 def extract_url_query_quantity(url: str) -> QuantityResult | None:
     return _extract_from_text("url_query", _query_text_from_url(url), 98)
-
-
-def _format_query_quantity(grams: float, original_value: str) -> str:
-    separator = "-" if "-" in original_value else ""
-    lowered = original_value.lower()
-    if any(unit in lowered for unit in ("kg", "kilo", "kilogram")) and grams % 1000 == 0:
-        amount = int(grams / 1000)
-        return f"{amount}{separator}kg"
-    amount = int(grams) if float(grams).is_integer() else grams
-    return f"{amount}{separator}g"
-
-
-def align_url_quantity_to_category(url: str, category: str) -> str:
-    category_quantity = extract_category_quantity(category)
-    query_quantity = extract_url_query_quantity(url)
-    if category_quantity is None or query_quantity is None:
-        return url
-    if abs(category_quantity.grams - query_quantity.grams) < 0.01:
-        return url
-
-    parsed = urlparse(url)
-    query = parse_qsl(parsed.query, keep_blank_values=True)
-    aligned: list[tuple[str, str]] = []
-    replaced = False
-    for key, value in query:
-        if not replaced and _extract_from_text("query_value", value.replace("-", " "), 98):
-            aligned.append((key, _format_query_quantity(category_quantity.grams, value)))
-            replaced = True
-        else:
-            aligned.append((key, value))
-    if not replaced:
-        return url
-    return urlunparse(parsed._replace(query=urlencode(aligned, doseq=True)))
 
 
 def unit_price_per_kg(price: float | None, quantity_grams: float | None) -> float | None:

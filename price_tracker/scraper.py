@@ -13,7 +13,6 @@ from .fetchers.browser_fetcher import fetch_with_browser
 from .fetchers.static_fetcher import FetchError, fetch_static
 from .models import PriceResult, utc_now_iso
 from .quantity import (
-    align_url_quantity_to_category,
     extract_category_quantity,
     extract_quantity,
     unit_price_per_kg,
@@ -86,7 +85,10 @@ def scrape_url(
     url: str,
     use_browser_fallback: bool = True,
 ) -> PriceResult:
-    effective_url = align_url_quantity_to_category(url, category)
+    # Category quantity is a hint for variant selection and review only.
+    # Never rewrite the user's URL: query parameters may identify the exact
+    # product variant they supplied.
+    effective_url = url
     domain = domain_from_url(effective_url)
     html = ""
     http_status: int | None = None
@@ -210,9 +212,16 @@ def run_scrape_job(
     category_id: int | None = None,
     limit: int | None = None,
     domain: str | None = None,
+    only_failed: bool = False,
     delay_seconds: float = 1.5,
 ) -> None:
-    urls = list_urls(db_path, category_id=category_id, domain=domain, limit=limit)
+    urls = list_urls(
+        db_path,
+        category_id=category_id,
+        domain=domain,
+        limit=limit,
+        only_failed=only_failed,
+    )
     last_domain_at: dict[str, float] = defaultdict(float)
     try:
         with connect(db_path) as conn:
@@ -220,11 +229,21 @@ def run_scrape_job(
                 elapsed = time.monotonic() - last_domain_at[row["domain"]]
                 if elapsed < delay_seconds:
                     time.sleep(delay_seconds - elapsed)
-                result = scrape_url(
-                    source_file=row["source_file"] or "",
-                    category=row["category"],
-                    url=row["url"],
-                )
+                try:
+                    result = scrape_url(
+                        source_file=row["source_file"] or "",
+                        category=row["category"],
+                        url=row["url"],
+                    )
+                except Exception as exc:
+                    result = _error_result(
+                        source_file=row["source_file"] or "",
+                        category=row["category"],
+                        url=row["url"],
+                        method="scrape_url",
+                        status="error",
+                        error=f"Unhandled URL error: {exc}",
+                    )
                 save_result(conn, result, url_id=row["id"], job_id=job_id)
                 update_job_progress(
                     conn,

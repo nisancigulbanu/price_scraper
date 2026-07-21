@@ -74,3 +74,46 @@ def test_clear_results_can_clear_one_category(tmp_path: Path):
     rows = latest_results(db_path)
     assert len(rows) == 1
     assert rows[0]["category"] == "cay"
+
+
+def test_list_urls_only_failed_returns_urls_without_successful_latest_result(tmp_path: Path):
+    db_path = tmp_path / "failed.sqlite3"
+    init_db(db_path)
+    import_records(
+        [
+            UrlRecord(source_file="a.xlsx", category="bal", url="https://example.com/a"),
+            UrlRecord(source_file="a.xlsx", category="bal", url="https://example.com/b"),
+        ],
+        db_path,
+    )
+    urls = list_urls(db_path)
+    with connect(db_path) as conn:
+        for row, status in zip(urls, ("success", "not_found")):
+            save_result(
+                conn,
+                PriceResult(
+                    source_file=row["source_file"],
+                    category=row["category"],
+                    url=row["url"],
+                    domain=row["domain"],
+                    product_name=None,
+                    price=10.0 if status == "success" else None,
+                    currency="TRY" if status == "success" else None,
+                    raw_price="10 TL" if status == "success" else None,
+                    quantity_grams=None,
+                    unit_price_per_kg=None,
+                    quantity_source=None,
+                    quantity_confidence=0,
+                    method="test",
+                    confidence=90 if status == "success" else 0,
+                    status=status,
+                    error=None if status == "success" else "missing",
+                    fetched_at=utc_now_iso(),
+                    http_status=200,
+                    final_url=row["url"],
+                ),
+                url_id=row["id"],
+            )
+
+    failed = list_urls(db_path, only_failed=True)
+    assert [row["url"] for row in failed] == ["https://example.com/b"]

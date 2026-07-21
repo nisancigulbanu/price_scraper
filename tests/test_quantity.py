@@ -1,4 +1,4 @@
-from price_tracker.quantity import align_url_quantity_to_category, extract_quantity, unit_price_per_kg
+from price_tracker.quantity import extract_quantity, unit_price_per_kg
 
 
 def test_extract_quantity_prefers_product_name():
@@ -23,14 +23,6 @@ def test_query_quantity_overrides_product_name_and_category():
     assert result.grams == 500
     assert result.source == "url_query"
     assert result.confidence == 98
-
-
-def test_url_quantity_aligns_to_category_quantity():
-    aligned = align_url_quantity_to_category(
-        "https://dogapestil.com/kome?Gram=500-g",
-        "1000_gr_cevizli_kome",
-    )
-    assert aligned == "https://dogapestil.com/kome?Gram=1000-g"
 
 
 def test_query_quantity_prefers_selected_value_over_option_key():

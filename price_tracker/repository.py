@@ -87,6 +87,7 @@ def list_urls(
     category_id: int | None = None,
     domain: str | None = None,
     limit: int | None = None,
+    only_failed: bool = False,
 ) -> list[sqlite3.Row]:
     ensure_database(db_path)
     clauses = ["u.active = 1"]
@@ -97,6 +98,22 @@ def list_urls(
     if domain:
         clauses.append("u.domain = ?")
         params.append(domain)
+    if only_failed:
+        clauses.append(
+            """
+            NOT EXISTS (
+                SELECT 1
+                FROM price_results latest_result
+                WHERE latest_result.url_id = u.id
+                  AND latest_result.id = (
+                      SELECT MAX(previous.id)
+                      FROM price_results previous
+                      WHERE previous.url_id = u.id
+                  )
+                  AND latest_result.status IN ('success', 'low_confidence')
+            )
+            """
+        )
     sql = (
         "SELECT u.*, c.name AS category, c.source_file "
         "FROM urls u JOIN categories c ON c.id = u.category_id "

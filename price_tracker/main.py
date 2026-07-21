@@ -19,7 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--domain", default=None)
     parser.add_argument("--category-id", type=int, default=None)
-    parser.add_argument("--only-failed", action="store_true", help="Reserved for retrying failed URLs")
+    parser.add_argument("--only-failed", action="store_true", help="Retry URLs whose latest result is not successful")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--import-categories", action="store_true", help="Only import category URL files")
     parser.add_argument("--backfill-unit-prices", action="store_true", help="Fill quantity and unit price fields for existing results")
@@ -55,6 +55,7 @@ def main() -> None:
         category_id=args.category_id,
         domain=args.domain,
         limit=args.limit,
+        only_failed=args.only_failed,
     )
     job_id = create_job(
         settings.database_path,
@@ -68,6 +69,7 @@ def main() -> None:
         category_id=args.category_id,
         limit=args.limit,
         domain=args.domain,
+        only_failed=args.only_failed,
         delay_seconds=0.0 if args.debug else 1.5,
     )
     output = export_reports(settings.database_path, Path(args.output))
